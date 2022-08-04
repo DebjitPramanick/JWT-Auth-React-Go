@@ -1,10 +1,15 @@
 package routes
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"server/controllers"
+
+	"github.com/gofiber/fiber/v2"
+)
 
 func Setup(app *fiber.App) {
 	
-	app.Get("/healthz", func (c *fiber.Ctx) error {
-		return c.SendString("APP IS RUNNING.")
-	})
+	app.Get("/healthz", controllers.CheckHealth)
+	app.Post("/api/register", controllers.Register)
+	app.Post("/api/login", controllers.Login)
+	app.Post("/api/user", controllers.GetUser)
 }

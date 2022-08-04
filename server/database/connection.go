@@ -13,7 +13,7 @@ const CONNECTION_URL = "mongodb+srv://debjit:Gyb6XLHxpxvHsRgn@cluster0.c4dqrmw.m
 const DB_NAME = "jwtAuth"
 const COLLECTION_NAME = "users"
 
-var collection *mongo.Collection
+var Collection *mongo.Collection
 
 func Connect() {
 	clientOption := options.Client().ApplyURI(CONNECTION_URL)
@@ -25,7 +25,7 @@ func Connect() {
 
 	fmt.Println("Successfully connected to DB")
 
-	collection = client.Database(DB_NAME).Collection(COLLECTION_NAME)
+	Collection = client.Database(DB_NAME).Collection(COLLECTION_NAME)
 
 	fmt.Println("Collection instance is ready.")
 }
