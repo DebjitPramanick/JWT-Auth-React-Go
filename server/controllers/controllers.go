@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -28,6 +29,7 @@ func Register(c *fiber.Ctx) error {
 	pass, _ := bcrypt.GenerateFromPassword([]byte(data["password"]), 14)
 
 	user := models.User {
+		ID: primitive.NewObjectID(),
 		Name: data["name"],
 		Password: pass,
 		Email: data["email"],
@@ -39,6 +41,7 @@ func Register(c *fiber.Ctx) error {
 		log.Fatal(err)
 		return err
 	}
+
 	fmt.Println("Created user with email & ID: ", user.Email, result.InsertedID)
 	return c.JSON(user)
 }
@@ -74,14 +77,18 @@ func Login(c *fiber.Ctx) error {
 
 func GetUser(c *fiber.Ctx) error {
 
-	var data map[string]string
+	params := c.AllParams()
 
-	err := c.BodyParser(&data)
+	var user models.User
+	userId, _ := primitive.ObjectIDFromHex(params["id"])
+	err := database.Collection.FindOne(context.Background(), bson.M{"_id": userId}).Decode(&user)
 
-	if err != nil {
-		return err
+	if err!=nil{
+		c.Status(fiber.StatusNotFound)
+		return c.JSON(fiber.Map{
+			"message": "User not found",
+		})
 	}
 
-
-	return c.JSON(data)
+	return c.JSON(user)
 }
