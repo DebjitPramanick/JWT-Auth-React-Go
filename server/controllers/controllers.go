@@ -6,13 +6,17 @@ import (
 	"log"
 	"server/database"
 	"server/models"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
+
+const SECRET = "secret"
 
 func CheckHealth(c *fiber.Ctx) error {
 	return c.SendString("APP IS RUNNING.")
@@ -72,21 +76,57 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(user)
+	claim := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
+		Issuer: user.ID.Hex(),
+		ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+	})
+
+	token, err := claim.SignedString([]byte(SECRET))
+
+	if err != nil {
+		c.Status(fiber.StatusInternalServerError)
+		return c.JSON(fiber.Map{
+			"message": "Could not login.",
+		})
+	}
+
+	cookie := fiber.Cookie{
+		Name: "jwt",
+		Value: token,
+		Expires: time.Now().Add(time.Hour * 24),
+		HTTPOnly: true,
+	}
+
+	c.Cookie(&cookie)
+
+	return c.JSON(fiber.Map{"token": token})
 }
 
 func GetUser(c *fiber.Ctx) error {
 
-	params := c.AllParams()
+	cookie := c.Cookies("jwt")
 
-	var user models.User
-	userId, _ := primitive.ObjectIDFromHex(params["id"])
-	err := database.Collection.FindOne(context.Background(), bson.M{"_id": userId}).Decode(&user)
+	token, err := jwt.ParseWithClaims(cookie, &jwt.StandardClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return []byte(SECRET), nil
+	})
 
 	if err!=nil{
+		c.Status(fiber.StatusUnauthorized)
+		return c.JSON(fiber.Map{
+			"message": "Unauthenticated",
+		})
+	}
+
+	claims := token.Claims.(*jwt.StandardClaims)
+
+	var user models.User
+	userId, _ := primitive.ObjectIDFromHex(claims.Issuer)
+	userError := database.Collection.FindOne(context.Background(), bson.M{"_id": userId}).Decode(&user)
+
+	if userError!=nil{
 		c.Status(fiber.StatusNotFound)
 		return c.JSON(fiber.Map{
-			"message": "User not found",
+			"message": "User not found.",
 		})
 	}
 
