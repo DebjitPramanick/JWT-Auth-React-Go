@@ -8,7 +8,8 @@ const LoginForm = () => {
     password: ''
   })
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: any) => {
+    e.preventDefault()
     try {
       await login(data)
     } catch (err) {

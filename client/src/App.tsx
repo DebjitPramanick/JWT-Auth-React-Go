@@ -6,6 +6,7 @@ import Register from "./views/Register";
 import Home from "./views/Home";
 
 export const App = () => {
+
   return (
     <div className="App">
       <Router>

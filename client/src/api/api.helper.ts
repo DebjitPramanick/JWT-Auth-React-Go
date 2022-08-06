@@ -36,7 +36,7 @@ export const logout = async () => {
     return res;
 }
 
-export const getUser = async (data: any) => {
+export const getUser = async () => {
     const res = await api.get('/user')
     .then(res => res)
     .catch(err => {
